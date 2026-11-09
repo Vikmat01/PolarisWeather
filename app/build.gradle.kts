@@ -10,10 +10,27 @@ android {
         applicationId = "com.example.weather"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "1.5"
+        versionCode = 16
+        versionName = "1.6"
     }
-    buildTypes { release { isMinifyEnabled = false } }
+    val ksFile = rootProject.file("keystore.properties")
+    if (ksFile.exists()) {
+        val ks = java.util.Properties().apply { ksFile.inputStream().use { load(it) } }
+        signingConfigs {
+            create("release") {
+                storeFile = file(ks.getProperty("storeFile"))
+                storePassword = ks.getProperty("storePassword")
+                keyAlias = ks.getProperty("keyAlias")
+                keyPassword = ks.getProperty("keyPassword")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
+        }
+    }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     buildFeatures { compose = true }
 }

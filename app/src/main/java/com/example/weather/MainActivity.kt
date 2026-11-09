@@ -878,11 +878,35 @@ fun WeatherScreen() {
                         }
                     }
                     Spacer(Modifier.weight(1f))
+                    // --- updates from GitHub Releases ---
+                    val updScope = rememberCoroutineScope()
+                    var update by remember { mutableStateOf<UpdateInfo?>(null) }
+                    var updMsg by remember { mutableStateOf("") }
+                    val checkUpdates: (Boolean) -> Unit = { manual ->
+                        updScope.launch {
+                            if (manual) updMsg = "Проверяю…"
+                            runCatching { Updater.check(ctx) }
+                                .onSuccess { u -> update = u; if (manual) updMsg = if (u == null) "Установлена последняя версия" else "" }
+                                .onFailure { if (manual) updMsg = "Не удалось проверить обновления" }
+                            prefs.edit().putLong("upd_t", System.currentTimeMillis()).apply()
+                        }
+                    }
+                    LaunchedEffect(Unit) {
+                        if (System.currentTimeMillis() - prefs.getLong("upd_t", 0L) > 12 * 3600_000L) checkUpdates(false)
+                    }
+                    Text(
+                        text = update?.let { "Доступно обновление ${it.version} — установить" }
+                            ?: updMsg.ifEmpty { "Проверить обновления" },
+                        color = if (update != null) Color(0xFFE5A8FF) else Color(0xFF8A8494),
+                        fontSize = 13.sp,
+                        modifier = Modifier.bounceClick { update?.let { Updater.downloadAndInstall(ctx, it) } ?: checkUpdates(true) }
+                            .padding(vertical = 8.dp)
+                    )
                     Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.12f)))
                     Spacer(Modifier.height(14.dp))
                     Text("Приложение распространяется по свободной лицензии", color = Color(0xFF6B6674), fontSize = 10.sp, lineHeight = 14.sp)
                     Spacer(Modifier.height(6.dp))
-                    Text("Разработчик: $DEV_NICK", color = Color(0xFF8A8494), fontSize = 11.sp)
+                    Text("Polaris Weather ${Updater.installedVersion(ctx)} · Разработчик: $DEV_NICK", color = Color(0xFF8A8494), fontSize = 11.sp)
                 }
             }
         }

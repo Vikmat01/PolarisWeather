@@ -9,3 +9,6 @@
 /captures/
 .externalNativeBuild
 .cxx
+keystore.properties
+*.jks
+*.keystore
